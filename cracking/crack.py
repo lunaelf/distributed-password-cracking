@@ -4,7 +4,7 @@ from flask import (
 from werkzeug.exceptions import abort
 
 from cracking import db_util
-from cracking import md5_util
+from cracking import hash_util
 from cracking import ray_util
 
 
@@ -19,8 +19,8 @@ def index():
     print("index()")
     if request.method == 'POST':
         tasks = []
-        columns = ['id', 'password', 'state', 'result', 'created', 'updated']
-        rows = db_util.get_all_task()
+        columns = ('id', 'hash', 'type', 'state', 'raw', 'created', 'updated')
+        rows = db_util.get_tasks()
         for row in rows:
             tasks.append(dict(zip(columns, row)))
         return jsonify(tasks)
@@ -31,54 +31,41 @@ def index():
 @bp.route('/crack', methods=['GET', 'POST'])
 def crack():
     """
-    破解 MD5
+    破解 MD5 或 SHA1
     """
     print("crack()")
     if request.method == 'POST':
-        md5_data = request.form['md5_data']
-        md5_data = md5_data.strip()
-        error = None
+        hash_data = request.form['hash_data']
+        type = request.form['type'].strip()
 
-        if not md5_data:
-            error = '密码（MD5）不能为空。'
-
-        if error is not None:
-            # flash(error)
+        if not hash_data:
             abort(400)
 
-        md5_list = md5_data.split(',')
-        for md5 in md5_list:
-            md5 = md5.strip()
-            print("MD5: " + md5)
-
-            task = db_util.get_task(md5)
-            if task is not None:
-                state = task["state"]
-                if state == 1:
-                    # 状态为已完成，该 MD5 已经破解过了，直接返回
-                    return redirect(url_for('index'))
-                else:
-                    # 状态为进行中或已取消，重新执行任务
-                    db_util.set_task(md5, 0)
-                    result = ray_util.distribute_task(md5)
-                    if result is not None:
-                        # 更新数据库中的任务
-                        db_util.set_task(md5, 1, result)
-                    else:
-                        # 用户停止任务或破解失败
-                        pass
+        hash_data = hash_data.strip()
+        hash_list = hash_data.split(',')
+        for hash in hash_list:
+            hash = hash.strip()
+            if type == '0':
+                print("MD5: " + hash)
+            elif type == '1':
+                print("SHA1: " + hash)
             else:
-                db_util.create_task(md5, 0)  # 在数据库中添加一个任务
-                result = ray_util.distribute_task(md5)  # 分配任务，分布式解密
-                if result is not None:
-                    # 更新数据库中的任务
-                    db_util.set_task(md5, 1, result)
+                pass
+
+            task = db_util.get_task_by_hash(hash)
+            if task is not None:
+                if task['state'] == 3:
+                    # 任务的状态为已取消，重新破解
+                    db_util.set_task(task['id'], 0)  # 把任务的状态设为排队中
                 else:
-                    # 用户停止任务或破解失败
                     pass
+            else:
+                db_util.create_task(hash, int(type))  # 在数据库中添加一个任务
+
+        ray_util.start()  # 任务添加完毕，开始破解
         return redirect(url_for('index'))
     else:
-        render_template('index.html')
+        return render_template('index.html')
 
 
 @bp.route('/stop_task', methods=['GET', 'POST'])
@@ -88,16 +75,16 @@ def stop_task():
     """
     print("stop_task()")
     if request.method == 'POST':
-        password = request.form['password']
-        task = db_util.get_task(password)
-        if task is not None:
-            ray_util.cancel_task()
-            db_util.set_task(password, 2)
-            return redirect(url_for('index'))
-        else:
+        id = request.form['id']
+        task = db_util.get_task(id)
+
+        if task is None:
             abort(400)
+
+        ray_util.stop_task(id)
+        return redirect(url_for('index'))
     else:
-        render_template('index.html')
+        return render_template('index.html')
 
 
 @bp.route('/get_progress')
@@ -106,7 +93,7 @@ def get_progress():
     获取任务执行的进度
     """
     print("get_progress()")
-    progress = ray_util.get_progress()
+    progress = ray_util.progress()
     print(progress)
     return {
         "progress": progress
@@ -116,16 +103,29 @@ def get_progress():
 @bp.route('/generate', methods=['POST', 'GET'])
 def generate():
     """
-    生成 MD5
+    生成 MD5 或 SHA1
     """
     print("generate()")
     if request.method == 'POST':
-        text = request.form['text']
-        text = text.strip()
-        print(text)
-        md5 = md5_util.generate(text)
+        raw = request.form['raw']
+        type = request.form['type'].strip()
+
+        if not raw:
+            abort(400)
+
+        raw = raw.strip()
+        print(raw)
+        print(type)
+        type = int(type)
+        if type == 0:
+            hash = hash_util.generate_md5(raw)
+        elif type == 1:
+            hash = hash_util.generate_sha1(raw)
+        else:
+            pass
+
         return {
-            "md5": md5
+            "hash": hash
         }
     else:
         return render_template('generate.html')

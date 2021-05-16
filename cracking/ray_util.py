@@ -1,96 +1,213 @@
 import ray
 from ray.exceptions import TaskCancelledError
 
+from datetime import datetime
 from itertools import permutations
 
-from cracking import md5_util
+from cracking import db_util
+from cracking import hash_util
 
 
 ray.init()
 # ray.init(address='auto', _redis_password='5241590000000000')
+
+# 原始密码每一位可能的取值
 # chars = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 # chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 chars = '0123456789abcdefghijklmnopqrstuvwxyz'
 
-# result_ids 和 is_cancel 用来协调 distribute_task 方法 和 cancel_task 方法的执行
-result_ids = []
-is_cancel = False
+task_queue = []  # 等待执行的任务队列，元素的数据类型为 <class 'sqlite3.Row'>
+is_started = False  # 是否开始计算
+result_ids = []  # Ray 未执行的计算任务
+is_canceled = False  # 用户是否取消任务
+last_time = None  # 最近一次添加到任务队列的时间
 
 
 @ray.remote
-def crack_md5_(md5, head, start=4, end=32):
+def crack_md5(md5, head, start=4, end=32):
     """
     破解 MD5
 
     :param md5: 待破解的 MD5
-    :param head: 第一个字符
-    :param start: 密码长度，最短位数
-    :param end: 密码长度，最长位数
-    :return: 原始密码。如果没有破解成功，返回 None
+    :param head: 首部字符
+    :param start: 原始密码长度，最短位数
+    :param end: 原始密码长度，最长位数
+    :return: 原始密码。如果破解失败，返回 None
     """
     for length in range(start, end):
         for char_list in permutations(chars, length - len(head)):
             string = ''.join(char_list)
-            password = head + string
-            if md5_util.generate(password) == md5:
-                return password
+            raw = head + string
+            if hash_util.generate_md5(raw) == md5:
+                return raw
     return None
 
-def distribute_task(md5):
-    """
-    分发任务
 
-    :param md5: 待破解的 MD5
+@ray.remote
+def crack_sha1(sha1, head, start=4, end=32):
+    """
+    破解 SHA1
+
+    :param sha1: 待破解的 SHA1
+    :param head: 首部字符
+    :param start: 原始密码长度，最短位数
+    :param end: 原始密码长度，最长位数
+    :return: 原始密码。如果破解失败，返回 None
+    """
+    for length in range(start, end):
+        for char_list in permutations(chars, length - len(head)):
+            string = ''.join(char_list)
+            raw = head + string
+            if hash_util.generate_sha1(raw) == sha1:
+                return raw
+    return None
+
+
+def enqueue(tasks):
+    """
+    向任务队列中添加任务
+    """
+    global task_queue
+    task_queue.extend(tasks)
+
+
+def dequeue():
+    """
+    任务队列删除第一个任务
+
+    :return: 删除的任务
+    """
+    global task_queue
+    return task_queue.pop(0)
+
+
+def start():
+    """
+    开始破解
+    """
+    global task_queue
+    global is_started
+    global last_time
+
+    if is_started:
+        # 正在破解，把新任务添加到 task_queue
+        tasks = db_util.get_queue_tasks_by_updated(last_time)
+        last_time = datetime.now()
+        enqueue(tasks)
+        return
+
+    is_started = True
+    tasks = db_util.get_queue_tasks()  # 所有排队中的任务
+    last_time = datetime.now()
+    enqueue(tasks)  # 添加到任务队列
+    while len(task_queue):
+        task = dequeue()
+        id = task['id']
+        hash = task['hash']
+        type = task['type']
+        db_util.set_task(id, 1)  # 把状态设为运行中
+        raw = distribute_computation(hash, type)
+        if raw is None:
+            # 用户取消任务，把状态设为已取消
+            db_util.set_task(id, 3)
+        elif raw == '':
+            # 破解失败，把状态设为未破解
+            db_util.set_task(id, 4)
+        else:
+            # 破解成功，把状态设为已完成，把原始密码存到数据库中
+            db_util.set_task(id, 2, raw)
+    is_started = False
+
+
+def stop_task(id):
+    """
+    停止任务
+
+    :param id: ID
+    """
+    global task_queue
+    global is_started
+
+    if not is_started:
+        # Ray 未开始计算或计算完成，直接返回
+        return
+
+    for task in task_queue:
+        if task['id'] == id:
+            # 如果要停止的任务在任务队列中，则在任务队列中删除该任务
+            task_queue.remove(task)
+            db_util.set_task(task['id'], 3)  # 把任务状态设为已取消
+            return
+    # 要停止的任务为当前执行的任务，则停止计算
+    stop_computation()
+    db_util.set_task(id, 3)  # 把任务状态设为已取消
+
+
+def distribute_computation(hash, type):
+    """
+    分发计算任务，即分布式计算
+
+    :param id: ID
+    :param hash: 待破解的哈希值
+    :param type: 哈希值的类型
     :return: 原始密码
     """
     global result_ids
-    global is_cancel
+    global is_canceled
 
-    # result_ids = [crack_md5_.remote(md5, c1 + c2, 4, 20) for c1 in chars for c2 in chars]
-    result_ids = [crack_md5_.remote(md5, c1 + c2, 4, 6) for c1 in chars for c2 in chars]
-    result = None
+    if type == 0:
+        result_ids = [crack_md5.remote(hash, c1 + c2, 4, 6) for c1 in chars for c2 in chars]
+    elif type == 1:
+        result_ids = [crack_sha1.remote(hash, c1 + c2, 4, 6) for c1 in chars for c2 in chars]
+    else:
+        pass
+
+    raw = ''
     while len(result_ids):
-        done_id, result_ids = ray.wait(result_ids, num_returns=1, timeout=None)
-        if is_cancel:
+        if is_canceled:
             # 用户停止任务，直接返回
             return None
+
+        done_id, result_ids = ray.wait(result_ids, num_returns=1, timeout=None)
         try:
-            result = ray.get(done_id[0])  # 获取解密结果
+            raw = ray.get(done_id[0])  # 获取破解结果
         except TaskCancelledError:
             print("Object reference was cancelled.")
             return None
         except KeyboardInterrupt:
             print("KeyboardInterrupt")
             return None
-        if result is not None:
-            # MD5 破解完成，跳转到 cancel_task()，停止其他节点的计算任务
+        if raw is not None and raw != '':
+            # 破解成功，停止其他节点的计算任务
+            stop_computation()
             break
+        else:
+            pass
 
-    cancel_task()
-    return result
+    return raw
 
 
-def cancel_task():
+def stop_computation():
     """
-    取消任务
+    停止 Ray 节点的计算任务
     """
     global result_ids
-    global is_cancel
+    global is_canceled
 
-    is_cancel = True
+    is_canceled = True
     for result_id in result_ids:
         ray.cancel(result_id)
     result_ids = []
-    is_cancel = False
+    is_canceled = False
 
 
-def get_progress():
+def progress():
     """
-    获取任务执行的进度
+    任务执行的进度
     """
-    # result_ids 表示未执行的任务
+    global result_ids
     if len(result_ids) != 0:
-        # 总共分配 len(chars) * len(chars) 个任务
+        # 总共分配了 len(chars) * len(chars) 个计算任务
         return 1 - len(result_ids) / (len(chars) * len(chars))
     else:
         return -1

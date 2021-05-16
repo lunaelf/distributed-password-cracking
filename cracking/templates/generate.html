@@ -49,16 +49,23 @@
     <div class="container">
       <form class="custom-form">
         <div class="form-group">
-          <label for="text">文本</label>
-          <input type="text" class="form-control" id="text" placeholder="文本" />
+          <label for="raw">原始密码</label>
+          <input type="text" class="form-control" id="raw" placeholder="原始密码" />
+        </div>
+        <div class="form-group">
+          <label class="radio-inline">
+            <input type="radio" name="type" id="md5" value="0" checked> MD5
+          </label>
+          <label class="radio-inline">
+            <input type="radio" name="type" id="sha1" value="1"> SHA1
+          </label>
         </div>
         <button type="button" class="btn btn-primary" id="button">
-          生成 MD5
+          生成
         </button>
       </form>
-      <p id="md5"></p>
-    </div>
-    <!-- /.container -->
+      <p id="hash"></p>
+    </div><!-- /.container -->
 
     <!-- Bootstrap core JavaScript
     ================================================== -->
@@ -66,36 +73,43 @@
     <script
       src="https://code.jquery.com/jquery-3.6.0.min.js"
       integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
-      crossorigin="anonymous" ></script>
+      crossorigin="anonymous">
+    </script>
     <script>
-      window.jQuery ||
-        document.write(
-          '<script src="../static/jquery-3.6.0/jquery-3.6.0.min.js"><\/script>'
-        );
+      window.jQuery || document.write('<script src="../static/jquery-3.6.0/jquery-3.6.0.min.js"><\/script>');
     </script>
     <script src="../static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
     <script>
       $(document).ready(function () {
         $("#button").click(function () {
-          const text = $("#text").val();
+          const raw = $("#raw").val();
           $("#raw").val("");
+          var type = "0";
+          if ($("#md5").is(":checked")) {
+            console.log("md5");
+            type = "0";
+          } else if ($("#sha1").is(":checked")) {
+            console.log("sha1");
+            type = "1";
+          }
           $.ajax({
             url: "generate",
             data: {
-              text: text,
+              raw: raw,
+              type: type
             },
             type: "POST",
             dataType: "json",
-          })
-            .done(function (json) {
-              $("#md5").text(json.md5);
-            })
-            .fail(function (xhr, status, errorThrown) {
+            success: function (json) {
+              $("#hash").text(json.hash);
+            },
+            error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");
               console.log("Error: " + errorThrown);
               console.log("Status: " + status);
               console.dir(xhr);
-            });
+            }
+          });
         });
       });
     </script>

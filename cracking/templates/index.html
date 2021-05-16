@@ -49,15 +49,23 @@
     <div class="container">
       <form class="custom-form">
         <div class="form-group">
-          <label for="md5_data">密码</label>
-          <input type="email" class="form-control" id="md5_data" placeholder="密码（MD5）">
+          <label for="hash_data">密码</label>
+          <input type="email" class="form-control" id="hash_data" placeholder="密码（MD5 或 SHA1）">
         </div>
-        <button type="submit" class="btn btn-primary" id="crack">解密</button>
+        <div class="form-group">
+          <label class="radio-inline">
+            <input type="radio" name="type" id="md5" value="0" checked> MD5
+          </label>
+          <label class="radio-inline">
+            <input type="radio" name="type" id="sha1" value="1"> SHA1
+          </label>
+        </div>
+        <button type="submit" class="btn btn-primary" id="crack">破解</button>
       </form>
     </div><!-- /.container -->
 
     <div class="container">
-      <p>解密进度</p>
+      <p>破解进度</p>
       <div class="progress">
         <div class="progress-bar progress-bar-striped active" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%" id="progress">
           0%
@@ -68,18 +76,19 @@
     <div class="container">
       <table class="table custom-table">
         <caption>
-          解密任务列表
+          破解任务列表
         </caption>
         <thead>
           <tr>
             <th>ID</th>
-            <th>MD5</th>
+            <th>密码</th>
+            <th>类型</th>
             <th>状态</th>
-            <th>结果</th>
+            <th>原始密码</th>
             <th>操作</th>
           </tr>
         </thead>
-        <tbody id="tb">
+        <tbody id="tbody">
         </tbody>
       </table>
     </div><!-- /.container -->
@@ -100,73 +109,99 @@
             data: {},
             type: "POST",
             dataType: "json",
-          })
-            .done(function (data) {
+            success: function (json) {
               console.log("refresh:");
-              console.log(data);
-              $("#tb").empty();
-              for (var i = 0; i < data.length; i++) {
+              console.log(json);
+              $("#tbody").empty();
+              for (var i = 0; i < json.length; i++) {
                 var tr = '';
-                if (data[i].state == 0) {
-                  tr = '<tr class="info">' + 
-                    '<td>' + data[i].id + '</td>' +
-                    '<td id="password">' + data[i].password + '</td>' +
-                    '<td>' + '进行中' + '</td>' +
-                    '<td>' + data[i].result + '</td>' +
-                    '<td>' + '<button type="button" class="btn btn-danger" id="stop_task">停止</button>' + '</td></tr>';
-                } else if (data[i].state == 1) {
-                  tr = '<tr class="success">' + 
-                    '<td>' + data[i].id + '</td>' +
-                    '<td>' + data[i].password + '</td>' +
-                    '<td>' + '已完成' + '</td>' +
-                    '<td>' + data[i].result + '</td>' +
-                    '<td>' + '<button type="button" class="btn btn-danger" disabled="disabled">停止</button>' + '</td></tr>';
-                } else if (data[i].state == 2) {
-                  tr = '<tr class="warning">' + 
-                    '<td>' + data[i].id + '</td>' +
-                    '<td>' + data[i].password + '</td>' +
-                    '<td>' + '已取消' + '</td>' +
-                    '<td>' + data[i].result + '</td>' +
-                    '<td>' + '<button type="button" class="btn btn-danger" disabled="disabled">停止</button>' + '</td></tr>';
+                var type = '';
+                if (json[i].type == 0) {
+                  type = 'MD5';
+                } else if (json[i].type == 1) {
+                  type = 'SHA1';
                 }
-                $("#tb").append(tr);
+                if (json[i].state == 0) {
+                  // TODO: 修改样式
+                  tr = '<tr>' + 
+                    '<td>' + json[i].id + '</td>' +
+                    '<td>' + json[i].hash + '</td>' +
+                    '<td>' + type + '</td>' +
+                    '<td>' + '排队中' + '</td>' +
+                    '<td>' + json[i].raw + '</td>' +
+                    '<td>' + '<button type="button" class="btn btn-danger" id="stop_task">停止</button>' + '</td></tr>';
+                } else if (json[i].state == 1) {
+                  tr = '<tr>' + 
+                    '<td>' + json[i].id + '</td>' +
+                    '<td>' + json[i].hash + '</td>' +
+                    '<td>' + type + '</td>' +
+                    '<td>' + '运行中' + '</td>' +
+                    '<td>' + json[i].raw + '</td>' +
+                    '<td>' + '<button type="button" class="btn btn-danger" id="stop_task">停止</button>' + '</td></tr>';
+                } else if (json[i].state == 2) {
+                  tr = '<tr>' + 
+                    '<td>' + json[i].id + '</td>' +
+                    '<td>' + json[i].hash + '</td>' +
+                    '<td>' + type + '</td>' +
+                    '<td>' + '已完成' + '</td>' +
+                    '<td>' + json[i].raw + '</td>' +
+                    '<td>' + '' + '</td></tr>';
+                } else if (json[i].state == 3) {
+                  tr = '<tr>' + 
+                    '<td>' + json[i].id + '</td>' +
+                    '<td>' + json[i].hash + '</td>' +
+                    '<td>' + type + '</td>' +
+                    '<td>' + '已取消' + '</td>' +
+                    '<td>' + json[i].raw + '</td>' +
+                    '<td>' + '' + '</td></tr>';
+                } else if (json[i].state == 4) {
+                  tr = '<tr>' + 
+                    '<td>' + json[i].id + '</td>' +
+                    '<td>' + json[i].hash + '</td>' +
+                    '<td>' + type + '</td>' +
+                    '<td>' + '未破解' + '</td>' +
+                    '<td>' + json[i].raw + '</td>' +
+                    '<td>' + '' + '</td></tr>';
+                }
+                $("#tbody").append(tr);
               }
 
               $("#stop_task").click(function (event) {
-                const password = $("#password").text();
+                // TODO: 停止任务
+                const id = $("#id").text();
                 $.ajax({
                   url: "{{ url_for('crack.stop_task') }}",
                   data: {
-                    password: password,
+                    id: id
                   },
                   type: "POST",
                   dataType: "html",
-                })
-                  .done(function (data) {
+                  success: function (data) {
                     console.log("stop task:");
-                  })
-                  .fail(function (xhr, status, errorThrown) {
+                  },
+                  error: function (xhr, status, errorThrown) {
                     // alert("Sorry, there was a problem!");
                     console.log("Error: " + errorThrown);
                     console.log("Status: " + status);
                     console.dir(xhr);
-                  });
+                  }
+                });
               });
-            })
-            .fail(function (xhr, status, errorThrown) {
+            },
+            error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");
               console.log("Error: " + errorThrown);
               console.log("Status: " + status);
               console.dir(xhr);
-            });
+            }
+          });
 
           $.ajax({
             url: "{{ url_for('crack.get_progress') }}",
             data: {},
             type: "GET",
             dataType: "json",
-          })
-            .done(function (json) {
+            success: function (json) {
               console.log("refresh_progress:");
               console.log(json);
               if (json.progress == -1) {
@@ -179,13 +214,14 @@
                 $("#progress").attr("style", "width: " + progress + "%");
                 $("#progress").text(progress + " %");
               }
-            })
-            .fail(function (xhr, status, errorThrown) {
+            },
+            error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");
               console.log("Error: " + errorThrown);
               console.log("Status: " + status);
               console.dir(xhr);
-            });
+            }
+          });
 
           setTimeout(arguments.callee, seconds * 1000);
         };
@@ -193,25 +229,34 @@
         refresh();
 
         $("#crack").click(function (event) {
-          const md5_data= $("#md5_data").val();
-          $("#md5_data").val("");
+          const hash_data= $("#hash_data").val();
+          $("#hash_data").val("");
+          var type = "0";
+          if ($("#md5").is(":checked")) {
+            console.log("md5");
+            type = "0";
+          } else if ($("#sha1").is(":checked")) {
+            console.log("sha1");
+            type = "1";
+          }
           $.ajax({
             url: "{{ url_for('crack.crack') }}",
             data: {
-              md5_data: md5_data,
+              hash_data: hash_data,
+              type: type
             },
             type: "POST",
             dataType: "html",
-          })
-            .done(function (data) {
+            success: function (data) {
               console.log("crack:");
-            })
-            .fail(function (xhr, status, errorThrown) {
+            },
+            error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");
               console.log("Error: " + errorThrown);
               console.log("Status: " + status);
               console.dir(xhr);
-            });
+            }
+          });
         });
       });
     </script>
