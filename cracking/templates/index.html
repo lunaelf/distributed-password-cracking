@@ -246,9 +246,10 @@
               type: type
             },
             type: "POST",
-            dataType: "html",
-            success: function (data) {
+            dataType: "json",
+            success: function (json) {
               console.log("crack:");
+              alert("原始密码：" + json.raw);
             },
             error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");

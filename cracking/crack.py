@@ -57,6 +57,11 @@ def crack():
                 if task['state'] == 3:
                     # 任务的状态为已取消，重新破解
                     db_util.set_task(task['id'], 0)  # 把任务的状态设为排队中
+                elif task['state'] == 2:
+                    # 任务的状态为已完成，返回原始密码
+                    return {
+                        "raw": task['raw']
+                    }
                 else:
                     pass
             else:
