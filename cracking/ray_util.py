@@ -34,12 +34,19 @@ def crack_md5(md5, head, start=4, end=32):
     :param end: 原始密码长度，最长位数
     :return: 原始密码。如果破解失败，返回 None
     """
-    for length in range(start, end):
-        for char_list in permutations(chars, length - len(head)):
-            string = ''.join(char_list)
-            raw = head + string
-            if hash_util.generate_md5(raw) == md5:
-                return raw
+    try:
+        for length in range(start, end):
+            for char_list in permutations(chars, length - len(head)):
+                string = ''.join(char_list)
+                raw = head + string
+                if hash_util.generate_md5(raw) == md5:
+                    return raw
+    except TaskCancelledError:
+        print("Object reference was cancelled.")
+        return None
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt")
+        return None
     return None
 
 
@@ -54,12 +61,19 @@ def crack_sha1(sha1, head, start=4, end=32):
     :param end: 原始密码长度，最长位数
     :return: 原始密码。如果破解失败，返回 None
     """
-    for length in range(start, end):
-        for char_list in permutations(chars, length - len(head)):
-            string = ''.join(char_list)
-            raw = head + string
-            if hash_util.generate_sha1(raw) == sha1:
-                return raw
+    try: 
+        for length in range(start, end):
+            for char_list in permutations(chars, length - len(head)):
+                string = ''.join(char_list)
+                raw = head + string
+                if hash_util.generate_sha1(raw) == sha1:
+                    return raw
+    except TaskCancelledError:
+        print("Object reference was cancelled.")
+        return None
+    except KeyboardInterrupt:
+        print("KeyboardInterrupt")
+        return None
     return None
 
 
@@ -85,6 +99,7 @@ def start():
     """
     开始破解
     """
+    print("start()")
     global task_queue
     global is_started
     global last_time
@@ -152,6 +167,7 @@ def distribute_computation(hash, type):
     :param type: 哈希值的类型
     :return: 原始密码
     """
+    print('distribute_computation()')
     global result_ids
     global is_canceled
 

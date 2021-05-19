@@ -68,6 +68,7 @@ def crack():
                 db_util.create_task(hash, int(type))  # 在数据库中添加一个任务
 
         ray_util.start()  # 任务添加完毕，开始破解
+        print('ray_util.start()')
         return redirect(url_for('index'))
     else:
         return render_template('index.html')
@@ -120,7 +121,13 @@ def generate():
 
         raw = raw.strip()
         print(raw)
-        print(type)
+        if type == '0':
+            print('MD5')
+        elif type == '1':
+            print('SHA1')
+        else:
+            pass
+
         type = int(type)
         if type == 0:
             hash = hash_util.generate_md5(raw)
