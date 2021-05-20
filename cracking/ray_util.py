@@ -2,7 +2,7 @@ import ray
 from ray.exceptions import TaskCancelledError
 
 from datetime import datetime
-from itertools import permutations
+from itertools import product
 
 from cracking import db_util
 from cracking import hash_util
@@ -36,7 +36,7 @@ def crack_md5(md5, head, start=4, end=32):
     """
     try:
         for length in range(start, end):
-            for char_list in permutations(chars, length - len(head)):
+            for char_list in product(chars, repeat=length - len(head)):
                 string = ''.join(char_list)
                 raw = head + string
                 if hash_util.generate_md5(raw) == md5:
@@ -63,7 +63,7 @@ def crack_sha1(sha1, head, start=4, end=32):
     """
     try: 
         for length in range(start, end):
-            for char_list in permutations(chars, length - len(head)):
+            for char_list in product(chars, repeat=length - len(head)):
                 string = ''.join(char_list)
                 raw = head + string
                 if hash_util.generate_sha1(raw) == sha1:
