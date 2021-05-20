@@ -259,6 +259,8 @@
         // console.log("ready -> after refresh(): is_regularly_refresh = " + window.is_regularly_refresh);
 
         $("#crack").click(function (event) {
+          event.preventDefault();
+
           const hash_data= $("#hash_data").val();
           $("#hash_data").val("");
           
