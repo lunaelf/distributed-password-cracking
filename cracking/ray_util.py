@@ -61,7 +61,7 @@ def crack_sha1(sha1, head, start=4, end=32):
     :param end: 原始密码长度，最长位数
     :return: 原始密码。如果破解失败，返回 None
     """
-    try: 
+    try:
         for length in range(start, end):
             for char_list in product(chars, repeat=length - len(head)):
                 string = ''.join(char_list)
@@ -184,7 +184,11 @@ def distribute_computation(hash, type):
             # 用户停止任务，直接返回
             return None
 
+        print("distribute_computation() -> before ray.wait() -> "
+              + "len(result_ids) = {0}".format(len(result_ids)))
         done_id, result_ids = ray.wait(result_ids, num_returns=1, timeout=None)
+        print("distribute_computation() -> after ray.wait() -> "
+              + "len(result_ids) = {0}".format(len(result_ids)))
         try:
             raw = ray.get(done_id[0])  # 获取破解结果
         except TaskCancelledError:

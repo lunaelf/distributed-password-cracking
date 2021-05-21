@@ -101,7 +101,6 @@
     <script src="../static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
     <script>
       $(document).ready(function () {
-        // window.is_regularly_refresh = false;
 
         function type_value() {
           var type = "0";
@@ -121,8 +120,10 @@
           }
         }
 
+        var timer; // 定时刷新变量
+
         function refresh() {
-          seconds = 2; // 2 秒定时刷新
+          seconds = 2;
 
           $.ajax({
             url: "{{ url_for('index') }}",
@@ -131,7 +132,6 @@
             dataType: "json",
             success: function (json) {
               console.log("refresh:");
-              // console.log("refresh: is_regularly_refresh = " + window.is_regularly_refresh);
               console.log(json);
               $("#tbody").empty();
               for (var i = 0; i < json.length; i++) {
@@ -218,21 +218,20 @@
             dataType: "json",
             success: function (json) {
               console.log("progress:");
-              // console.log("progress: is_regularly_refresh = " + window.is_regularly_refresh);
               console.log(json);
               if (json.progress == -1) {
                 $("#progress").attr("aria-valuenow", "0");
                 $("#progress").attr("style", "width: 0%");
                 $("#progress").text("0 %");
-                // window.is_regularly_refresh = false; // 破解完成，取消定时刷新
-                // console.log("progress == -1: is_regularly_refresh = " + window.is_regularly_refresh);
+                if(typeof timer == "undefined") {
+                  timer = 0;
+                }
+                clearTimeout(timer);
               } else {
                 var progress = (json.progress * 100).toFixed(2);
                 $("#progress").attr("aria-valuenow", progress);
                 $("#progress").attr("style", "width: " + progress + "%");
                 $("#progress").text(progress + " %");
-                // window.is_regularly_refresh = true; // 正在破解，定时刷新
-                // console.log("progress != -1: is_regularly_refresh = " + window.is_regularly_refresh);
               }
             },
             error: function (xhr, status, errorThrown) {
@@ -243,32 +242,17 @@
             }
           });
 
-          // console.log("if: is_regularly_refresh = " + window.is_regularly_refresh);
-          /*
-          if (window.is_regularly_refresh) {
-            setTimeout(refresh, seconds * 1000);
-          }
-          */
-          setTimeout(refresh, seconds * 1000);
+          timer = setTimeout(refresh, seconds * 1000); // 定时刷新
         };
 
-        // 首次加载页面，刷新一次
-        // window.is_regularly_refresh = false;
-        // console.log("ready -> before refresh(): is_regularly_refresh = " + window.is_regularly_refresh);
         refresh();
-        // console.log("ready -> after refresh(): is_regularly_refresh = " + window.is_regularly_refresh);
 
         $("#crack").click(function (event) {
           event.preventDefault();
 
           const hash_data= $("#hash_data").val();
           $("#hash_data").val("");
-          
-          // 开始定时刷新
-          // window.is_regularly_refresh = true;
-          // console.log("crack -> before refresh(): is_regularly_refresh = " + window.is_regularly_refresh);
-          // refresh();
-          // console.log("crack -> after refresh(): is_regularly_refresh = " + window.is_regularly_refresh);
+          setTimeout(refresh, 2000); // 延迟 2 秒再刷新
 
           $.ajax({
             url: "{{ url_for('crack.crack') }}",
