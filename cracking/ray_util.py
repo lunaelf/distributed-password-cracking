@@ -112,6 +112,13 @@ def start():
         return
 
     is_started = True
+
+    # 解决上一次运行中的任务突然停止的情况
+    tasks = db_util.get_running_tasks()
+    if tasks is not None:
+        for task in tasks:
+            db_util.set_task(task['id'], 0)  # 把运行中任务改为排队中任务
+
     tasks = db_util.get_queue_tasks()  # 所有排队中的任务
     last_time = datetime.now()
     enqueue(tasks)  # 添加到任务队列
@@ -184,11 +191,9 @@ def distribute_computation(hash, type):
             # 用户停止任务，直接返回
             return None
 
-        # print("distribute_computation() -> before ray.wait() -> "
-        #       + "len(result_ids) = {0}".format(len(result_ids)))
+        # print("distribute_computation() -> before ray.wait() -> len(result_ids) = {0}".format(len(result_ids)))
         done_id, result_ids = ray.wait(result_ids, num_returns=1, timeout=None)
-        # print("distribute_computation() -> after ray.wait() -> "
-        #       + "len(result_ids) = {0}".format(len(result_ids)))
+        # print("distribute_computation() -> after ray.wait() -> len(result_ids) = {0}".format(len(result_ids)))
         try:
             raw = ray.get(done_id[0])  # 获取破解结果
         except TaskCancelledError:
@@ -211,12 +216,13 @@ def stop_computation():
     """
     停止 Ray 节点的计算任务
     """
+    print('stop_computation()')
     global result_ids
     global is_canceled
 
     is_canceled = True
     for result_id in result_ids:
-        ray.cancel(result_id)
+        ray.cancel(result_id, force=True)
     result_ids = []
     is_canceled = False
 

@@ -53,6 +53,22 @@ def get_queue_tasks_by_updated(updated):
     return tasks
 
 
+def get_running_tasks():
+    """
+    获取运行中的任务
+
+    :return: 运行中的任务
+    """
+    tasks = get_db().execute(
+        'SELECT id, hash, type, state, raw, created, updated'
+        ' FROM task'
+        ' WHERE state = 1 AND deleted = 0'
+        ' ORDER BY created DESC'
+    ).fetchall()
+
+    return tasks
+
+
 def get_task(id):
     """
     根据 id 获取任务信息
