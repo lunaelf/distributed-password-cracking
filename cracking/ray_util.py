@@ -184,11 +184,11 @@ def distribute_computation(hash, type):
             # 用户停止任务，直接返回
             return None
 
-        print("distribute_computation() -> before ray.wait() -> "
-              + "len(result_ids) = {0}".format(len(result_ids)))
+        # print("distribute_computation() -> before ray.wait() -> "
+        #       + "len(result_ids) = {0}".format(len(result_ids)))
         done_id, result_ids = ray.wait(result_ids, num_returns=1, timeout=None)
-        print("distribute_computation() -> after ray.wait() -> "
-              + "len(result_ids) = {0}".format(len(result_ids)))
+        # print("distribute_computation() -> after ray.wait() -> "
+        #       + "len(result_ids) = {0}".format(len(result_ids)))
         try:
             raw = ray.get(done_id[0])  # 获取破解结果
         except TaskCancelledError:
@@ -225,9 +225,11 @@ def progress():
     """
     任务执行的进度
     """
+    global is_started
     global result_ids
-    if len(result_ids) != 0:
-        # 总共分配了 len(chars) * len(chars) 个计算任务
+
+    if is_started:
+        # 破解一个 hash 分配 len(chars) * len(chars) 个计算任务
         return 1 - len(result_ids) / (len(chars) * len(chars))
     else:
         return -1
