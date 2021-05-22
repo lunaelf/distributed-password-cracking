@@ -14,7 +14,7 @@ def get_tasks():
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE deleted = 0'
-        ' ORDER BY created DESC'
+        ' ORDER BY created DESC, id DESC'
     ).fetchall()
 
     return tasks
@@ -30,7 +30,6 @@ def get_queue_tasks():
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE state = 0 AND deleted = 0'
-        ' ORDER BY created DESC'
     ).fetchall()
 
     return tasks
@@ -46,8 +45,7 @@ def get_queue_tasks_by_created(created):
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
-        ' WHERE state = 0 AND created > ? AND deleted = 0'
-        ' ORDER BY created DESC',
+        ' WHERE state = 0 AND created > ? AND deleted = 0',
         (str(created),)
     ).fetchall()
 
@@ -63,8 +61,7 @@ def get_running_tasks():
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
-        ' WHERE state = 1 AND deleted = 0'
-        ' ORDER BY created DESC'
+        ' WHERE state = 1 AND deleted = 0',
     ).fetchall()
 
     return tasks
