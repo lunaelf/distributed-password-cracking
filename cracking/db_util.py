@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timezone
 
 from cracking.db import get_db
 
@@ -10,7 +11,7 @@ def get_tasks():
     :return: 所有的任务信息
     """
     tasks = get_db().execute(
-        'SELECT id, hash, type, state, raw, created, updated'
+        'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE deleted = 0'
         ' ORDER BY created DESC'
@@ -26,7 +27,7 @@ def get_queue_tasks():
     :return: 排队中的任务
     """
     tasks = get_db().execute(
-        'SELECT id, hash, type, state, raw, created, updated'
+        'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE state = 0 AND deleted = 0'
         ' ORDER BY created DESC'
@@ -35,19 +36,19 @@ def get_queue_tasks():
     return tasks
 
 
-def get_queue_tasks_by_updated(updated):
+def get_queue_tasks_by_created(created):
     """
-    获取某更新时间以后排队中的任务
+    获取某创建时间以后排队中的任务
 
-    :param updated: 更新时间
-    :return: 某更新时间以后排队中的任务
+    :param created: 创建时间
+    :return: 某创建时间以后排队中的任务
     """
     tasks = get_db().execute(
-        'SELECT id, hash, type, state, raw, created, updated'
+        'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
-        ' WHERE state = 0 AND updated > ? AND deleted = 0'
+        ' WHERE state = 0 AND created > ? AND deleted = 0'
         ' ORDER BY created DESC',
-        (str(updated),)
+        (str(created),)
     ).fetchall()
 
     return tasks
@@ -60,7 +61,7 @@ def get_running_tasks():
     :return: 运行中的任务
     """
     tasks = get_db().execute(
-        'SELECT id, hash, type, state, raw, created, updated'
+        'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE state = 1 AND deleted = 0'
         ' ORDER BY created DESC'
@@ -77,7 +78,7 @@ def get_task(id):
     :return: 一个任务信息。如果没找到，返回 None
     """
     task = get_db().execute(
-        'SELECT id, hash, type, state, raw, created, updated'
+        'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE id = ? AND deleted = 0',
         (id,)
@@ -94,7 +95,7 @@ def get_task_by_hash(hash):
     :return: 一个任务信息。如果没找到，返回 None
     """
     task = get_db().execute(
-        'SELECT id, hash, type, state, raw, created, updated'
+        'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
         ' WHERE hash = ? AND deleted = 0',
         (hash,)
@@ -115,7 +116,7 @@ def set_task(id, state, raw=''):
     db.execute(
         'UPDATE task SET state = ?, raw = ?, updated = ?'
         ' WHERE id = ?',
-        (state, raw, str(datetime.now()), id)
+        (state, raw, str(datetime.now(timezone.utc)), id)
     )
     db.commit()
 

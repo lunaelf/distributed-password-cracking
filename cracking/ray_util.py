@@ -2,6 +2,7 @@ import ray
 from ray.exceptions import TaskCancelledError
 
 from datetime import datetime
+from datetime import timezone
 from itertools import product
 
 from cracking import db_util
@@ -106,8 +107,8 @@ def start():
 
     if is_started:
         # 正在破解，把新任务添加到 task_queue
-        tasks = db_util.get_queue_tasks_by_updated(last_time)
-        last_time = datetime.now()
+        tasks = db_util.get_queue_tasks_by_created(last_time)
+        last_time = datetime.now(timezone.utc)  # SQLite 3 中存储的是 UTC 时间，因此这里为 UTC 时间
         enqueue(tasks)
         return
 
@@ -120,7 +121,7 @@ def start():
             db_util.set_task(task['id'], 0)  # 把运行中任务改为排队中任务
 
     tasks = db_util.get_queue_tasks()  # 所有排队中的任务
-    last_time = datetime.now()
+    last_time = datetime.now(timezone.utc)  # SQLite 3 中存储的是 UTC 时间，因此这里为 UTC 时间
     enqueue(tasks)  # 添加到任务队列
     while len(task_queue):
         task = dequeue()
@@ -138,6 +139,7 @@ def start():
         else:
             # 破解成功，把状态设为已完成，把原始密码存到数据库中
             db_util.set_task(id, 2, raw)
+
     is_started = False
 
 
