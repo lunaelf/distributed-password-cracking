@@ -44,6 +44,7 @@ def crack():
 
         hash_data = hash_data.strip()
         hash_list = hash_data.split(',')
+        finished = []
         for hash in hash_list:
             hash = hash.strip()
             if type == '0':
@@ -59,18 +60,21 @@ def crack():
                     # 任务的状态为已取消，重新破解
                     db_util.set_task(task['id'], 0)  # 把任务的状态设为排队中
                 elif task['state'] == 2:
-                    # 任务的状态为已完成，返回原始密码
-                    return {
-                        "raw": task['raw']
-                    }
+                    # 任务的状态为已完成，添加到已完成数组
+                    finished.append({"hash": task['hash'], "type": task['type'], "raw": task['raw']})
                 else:
                     pass
             else:
                 db_util.create_task(hash, int(type))  # 在数据库中添加一个任务
 
         ray_util.start()  # 任务添加完毕，开始破解
-        print('ray_util.start()')
-        return redirect(url_for('index'))
+        if len(finished) > 0:
+            # 待破解的哈希值中有已完成的任务，直接返回结果
+            return jsonify(finished)
+        else:
+            return {
+                "results": []
+            }
     else:
         return render_template('index.html')
 

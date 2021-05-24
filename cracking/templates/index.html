@@ -268,7 +268,13 @@
             dataType: "json",
             success: function (json) {
               console.log("crack:");
-              alert("原始密码：" + json.raw);
+              var message = "";
+              for (var i = 0; i < json.length; i++) {
+                var task = json[i];
+                message = message + "密码：" + task.hash + "    类型：" + typeName(task.type)
+                    + "    原始密码：" + task.raw + "\n";
+              }
+              alert(message);
             },
             error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");
