@@ -25,6 +25,7 @@ def index():
             tasks.append(dict(zip(columns, row)))
         return jsonify(tasks)
     else:
+        ray_util.start()  # 破解排队中的任务
         return render_template('index.html')
 
 
@@ -74,21 +75,24 @@ def crack():
         return render_template('index.html')
 
 
-@bp.route('/stop_task', methods=['GET', 'POST'])
-def stop_task():
+@bp.route('/cancel_task', methods=['GET', 'POST'])
+def cancel_task():
     """
-    停止任务
+    取消任务
     """
-    print("stop_task()")
+    print("cancel_task()")
     if request.method == 'POST':
         id = request.form['id']
+        print("id: {0}".format(id))
         task = db_util.get_task(id)
 
         if task is None:
             abort(400)
 
         ray_util.stop_task(id)
-        return redirect(url_for('index'))
+        return {
+            "results": []
+        }
     else:
         return render_template('index.html')
 

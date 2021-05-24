@@ -107,7 +107,7 @@ def start():
 
     if is_started:
         # 正在破解，把新任务添加到 task_queue
-        tasks = db_util.get_queue_tasks_by_created(last_time)
+        tasks = db_util.get_queue_tasks_by_updated(last_time)
         last_time = datetime.now(timezone.utc)  # SQLite 3 中存储的是 UTC 时间，因此这里为 UTC 时间
         enqueue(tasks)
         return
@@ -156,6 +156,8 @@ def stop_task(id):
         # Ray 未开始计算或计算完成，直接返回
         return
 
+    if isinstance(id, str):
+        id = int(id)
     for task in task_queue:
         if task['id'] == id:
             # 如果要停止的任务在任务队列中，则在任务队列中删除该任务
@@ -164,7 +166,6 @@ def stop_task(id):
             return
     # 要停止的任务为当前执行的任务，则停止计算
     stop_computation()
-    db_util.set_task(id, 3)  # 把任务状态设为已取消
 
 
 def distribute_computation(hash, type):

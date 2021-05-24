@@ -102,7 +102,7 @@
     <script>
       $(document).ready(function () {
 
-        function type_value() {
+        function typeValue() {
           var type = "0";
           if ($("#md5").is(":checked")) {
             type = "0";
@@ -112,7 +112,7 @@
           return type
         }
 
-        function type_name(type) {
+        function typeName(type) {
           if (type == 0) {
             return "MD5";
           } else if (type == 1) {
@@ -137,27 +137,26 @@
               for (var i = 0; i < json.length; i++) {
                 var tr = '';
                 if (json[i].state == 0) {
-                  // TODO: 修改样式
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
-                    '<td>' + type_name(json[i].type) + '</td>' +
+                    '<td>' + typeName(json[i].type) + '</td>' +
                     '<td>' + '排队中' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
-                    '<td>' + '<button type="button" class="btn btn-danger" id="stop_task">停止</button>' + '</td></tr>';
+                    '<td>' + '<button type="button" class="btn btn-danger cancel-task">取消</button>' + '</td></tr>';
                 } else if (json[i].state == 1) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
-                    '<td>' + type_name(json[i].type) + '</td>' +
+                    '<td>' + typeName(json[i].type) + '</td>' +
                     '<td>' + '运行中' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
-                    '<td>' + '<button type="button" class="btn btn-danger" id="stop_task">停止</button>' + '</td></tr>';
+                    '<td>' + '<button type="button" class="btn btn-danger cancel-task">取消</button>' + '</td></tr>';
                 } else if (json[i].state == 2) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
-                    '<td>' + type_name(json[i].type) + '</td>' +
+                    '<td>' + typeName(json[i].type) + '</td>' +
                     '<td>' + '已完成' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '' + '</td></tr>';
@@ -165,7 +164,7 @@
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
-                    '<td>' + type_name(json[i].type) + '</td>' +
+                    '<td>' + typeName(json[i].type) + '</td>' +
                     '<td>' + '已取消' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '' + '</td></tr>';
@@ -173,7 +172,7 @@
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
-                    '<td>' + type_name(json[i].type) + '</td>' +
+                    '<td>' + typeName(json[i].type) + '</td>' +
                     '<td>' + '未破解' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '' + '</td></tr>';
@@ -181,18 +180,18 @@
                 $("#tbody").append(tr);
               }
 
-              $("#stop_task").click(function (event) {
-                // TODO: 停止任务
-                const id = $("#id").text();
+              $(".cancel-task").click(function (event) {
+                const id = $(".cancel-task").parent().prevAll().last().text(); // 选择该任务的 id
+                console.log("cancel-task -> id: " + id);
                 $.ajax({
-                  url: "{{ url_for('crack.stop_task') }}",
+                  url: "{{ url_for('crack.cancel_task') }}",
                   data: {
                     id: id
                   },
                   type: "POST",
-                  dataType: "html",
-                  success: function (data) {
-                    console.log("stop task:");
+                  dataType: "json",
+                  success: function (json) {
+                    console.log("cancel task:");
                   },
                   error: function (xhr, status, errorThrown) {
                     // alert("Sorry, there was a problem!");
@@ -258,7 +257,7 @@
             url: "{{ url_for('crack.crack') }}",
             data: {
               hash_data: hash_data,
-              type: type_value()
+              type: typeValue()
             },
             type: "POST",
             dataType: "json",

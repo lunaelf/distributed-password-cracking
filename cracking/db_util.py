@@ -35,18 +35,18 @@ def get_queue_tasks():
     return tasks
 
 
-def get_queue_tasks_by_created(created):
+def get_queue_tasks_by_updated(updated):
     """
-    获取某创建时间以后排队中的任务
+    获取某更新时间以后排队中的任务
 
-    :param created: 创建时间
-    :return: 某创建时间以后排队中的任务
+    :param updated: 更新时间
+    :return: 某更新时间以后排队中的任务
     """
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
         ' FROM task'
-        ' WHERE state = 0 AND created > ? AND deleted = 0',
-        (str(created),)
+        ' WHERE state = 0 AND updated > ? AND deleted = 0',
+        (str(updated),)
     ).fetchall()
 
     return tasks
