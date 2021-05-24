@@ -226,6 +226,11 @@
                   timer = 0;
                 }
                 clearTimeout(timer);
+              } else if (json.progress == 1) {
+                // 破解进度为 100 % 时改成 0 %，使进度看起来更自然
+                $("#progress").attr("aria-valuenow", "0");
+                $("#progress").attr("style", "width: 0%");
+                $("#progress").text("0 %");
               } else {
                 var progress = (json.progress * 100).toFixed(2);
                 $("#progress").attr("aria-valuenow", progress);
