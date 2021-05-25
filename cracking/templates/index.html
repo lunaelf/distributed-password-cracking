@@ -268,13 +268,16 @@
             dataType: "json",
             success: function (json) {
               console.log("crack:");
-              var message = "";
-              for (var i = 0; i < json.length; i++) {
-                var task = json[i];
-                message = message + "密码：" + task.hash + "    类型：" + typeName(task.type)
-                    + "    原始密码：" + task.raw + "\n";
+              console.log(json);
+              if (!json.hasOwnProperty("results")) {
+                var message = "";
+                for (var i = 0; i < json.length; i++) {
+                  var task = json[i];
+                  message = message + "密码：" + task.hash + "    类型：" + typeName(task.type)
+                      + "    原始密码：" + task.raw + "\n";
+                }
+                alert(message);
               }
-              alert(message);
             },
             error: function (xhr, status, errorThrown) {
               // alert("Sorry, there was a problem!");
