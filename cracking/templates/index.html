@@ -113,9 +113,9 @@
         }
 
         function typeName(type) {
-          if (type == 0) {
+          if (type === 0) {
             return "MD5";
-          } else if (type == 1) {
+          } else if (type === 1) {
             return "SHA1";
           }
         }
@@ -136,7 +136,7 @@
               $("#tbody").empty();
               for (var i = 0; i < json.length; i++) {
                 var tr = '';
-                if (json[i].state == 0) {
+                if (json[i].state === 0) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
@@ -144,7 +144,7 @@
                     '<td>' + '排队中' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '<button type="button" class="btn btn-danger cancel-task">取消</button>' + '</td></tr>';
-                } else if (json[i].state == 1) {
+                } else if (json[i].state === 1) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
@@ -152,7 +152,7 @@
                     '<td>' + '运行中' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '<button type="button" class="btn btn-danger cancel-task">取消</button>' + '</td></tr>';
-                } else if (json[i].state == 2) {
+                } else if (json[i].state === 2) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
@@ -160,7 +160,7 @@
                     '<td>' + '已完成' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '' + '</td></tr>';
-                } else if (json[i].state == 3) {
+                } else if (json[i].state === 3) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
@@ -168,7 +168,7 @@
                     '<td>' + '已取消' + '</td>' +
                     '<td>' + json[i].raw + '</td>' +
                     '<td>' + '' + '</td></tr>';
-                } else if (json[i].state == 4) {
+                } else if (json[i].state === 4) {
                   tr = '<tr>' + 
                     '<td>' + json[i].id + '</td>' +
                     '<td>' + json[i].hash + '</td>' +
@@ -191,7 +191,7 @@
                   type: "POST",
                   dataType: "json",
                   success: function (json) {
-                    console.log("cancel task:");
+                    console.log("cancel-task:");
                   },
                   error: function (xhr, status, errorThrown) {
                     // alert("Sorry, there was a problem!");
@@ -218,15 +218,15 @@
             success: function (json) {
               console.log("progress:");
               console.log(json);
-              if (json.progress == -1) {
+              if (json.progress === -1) {
                 $("#progress").attr("aria-valuenow", "0");
                 $("#progress").attr("style", "width: 0%");
                 $("#progress").text("0 %");
-                if(typeof timer == "undefined") {
+                if((typeof timer) === "undefined") {
                   timer = 0;
                 }
                 clearTimeout(timer);
-              } else if (json.progress == 1) {
+              } else if (json.progress === 1) {
                 // 破解进度为 100 % 时改成 0 %，使进度看起来更自然
                 $("#progress").attr("aria-valuenow", "0");
                 $("#progress").attr("style", "width: 0%");
