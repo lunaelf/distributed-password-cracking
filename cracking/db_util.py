@@ -8,7 +8,7 @@ def get_tasks():
     """
     获取所有的任务信息
 
-    :return: 所有的任务信息
+    :return: 所有的任务信息，结果为空则返回 []
     """
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
@@ -24,7 +24,7 @@ def get_queue_tasks():
     """
     获取排队中的任务
 
-    :return: 排队中的任务
+    :return: 排队中的任务，结果为空则返回 []
     """
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
@@ -40,7 +40,7 @@ def get_queue_tasks_by_updated(updated):
     获取某更新时间以后排队中的任务
 
     :param updated: 更新时间
-    :return: 某更新时间以后排队中的任务
+    :return: 某更新时间以后排队中的任务，结果为空则返回 []
     """
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'
@@ -56,7 +56,7 @@ def get_running_tasks():
     """
     获取运行中的任务
 
-    :return: 运行中的任务
+    :return: 运行中的任务，结果为空则返回 []
     """
     tasks = get_db().execute(
         'SELECT id, hash, type, state, raw, datetime(created, "localtime"), datetime(updated, "localtime")'

@@ -17,7 +17,46 @@ ray.init()
 # chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
 chars = '0123456789abcdefghijklmnopqrstuvwxyz'
 
-task_queue = []  # 等待执行的任务队列，元素的数据类型为 <class 'sqlite3.Row'>
+
+class Queue():
+    """
+    队列
+    """
+
+    def __init__(self):
+        """初始化 queue"""
+        self.queue = []
+
+    def enqueue(self, item):
+        """入队"""
+        self.queue.append(item)
+
+    def enqueue_list(self, items):
+        """列表入队"""
+        self.queue.extend(items)
+
+    def dequeue(self):
+        """出队"""
+        return self.queue.pop(0)
+
+    def remove(self, item):
+        """删除某个元素"""
+        self.queue.remove(item)
+
+    def is_empty(self):
+        """队列是否为空"""
+        return len(self.queue) == 0
+
+    def size(self):
+        """队列的长度"""
+        return len(self.queue)
+
+    def iterator(self):
+        """迭代器"""
+        return self.queue
+
+
+task_queue = Queue()  # 等待执行的任务队列，元素的数据类型为 <class 'sqlite3.Row'>
 is_started = False  # 是否开始计算
 result_ids = []  # Ray 未执行的计算任务
 is_canceled = False  # 用户是否取消任务
@@ -78,24 +117,6 @@ def crack_sha1(sha1, head, start=4, end=32):
     return None
 
 
-def enqueue(tasks):
-    """
-    向任务队列中添加任务
-    """
-    global task_queue
-    task_queue.extend(tasks)
-
-
-def dequeue():
-    """
-    任务队列删除第一个任务
-
-    :return: 删除的任务
-    """
-    global task_queue
-    return task_queue.pop(0)
-
-
 def start():
     """
     开始破解
@@ -109,22 +130,21 @@ def start():
         # 正在破解，把新任务添加到 task_queue
         tasks = db_util.get_queue_tasks_by_updated(last_time)
         last_time = datetime.now(timezone.utc)  # SQLite 3 中存储的是 UTC 时间，因此这里为 UTC 时间
-        enqueue(tasks)
+        task_queue.enqueue_list(tasks)
         return
 
     is_started = True
 
     # 解决上一次运行中的任务突然停止的情况
     tasks = db_util.get_running_tasks()
-    if tasks is not None:
-        for task in tasks:
-            db_util.set_task(task['id'], 0)  # 把运行中任务改为排队中任务
+    for task in tasks:
+        db_util.set_task(task['id'], 0)  # 把运行中任务改为排队中任务
 
     tasks = db_util.get_queue_tasks()  # 所有排队中的任务
+    task_queue.enqueue_list(tasks)  # 添加到任务队列
     last_time = datetime.now(timezone.utc)  # SQLite 3 中存储的是 UTC 时间，因此这里为 UTC 时间
-    enqueue(tasks)  # 添加到任务队列
-    while len(task_queue):
-        task = dequeue()
+    while not task_queue.is_empty():
+        task = task_queue.dequeue()
         id = task['id']
         hash = task['hash']
         type = task['type']
@@ -158,7 +178,7 @@ def stop_task(id):
 
     if isinstance(id, str):
         id = int(id)
-    for task in task_queue:
+    for task in task_queue.iterator():
         if task['id'] == id:
             # 如果要停止的任务在任务队列中，则在任务队列中删除该任务
             task_queue.remove(task)
