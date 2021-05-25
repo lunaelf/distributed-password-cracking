@@ -81,17 +81,30 @@
     <script src="../static/bootstrap-3.4.1/js/bootstrap.min.js"></script>
     <script>
       $(document).ready(function () {
+
+        function typeValue() {
+          var type = "0";
+          if ($("#md5").is(":checked")) {
+            type = "0";
+          } else if ($("#sha1").is(":checked")) {
+            type = "1";
+          }
+          return type
+        }
+
         $("#button").click(function () {
           const raw = $("#raw").val();
           $("#raw").val("");
-          var type = "0";
-          if ($("#md5").is(":checked")) {
-            console.log("MD5");
-            type = "0";
-          } else if ($("#sha1").is(":checked")) {
-            console.log("SHA1");
-            type = "1";
+          var type = typeValue();
+
+          // 检查输入
+          var re = /^[0-9A-Za-z!"#$%&'()*+,-./:;<=>?@[\\\]^_`{|}~]{4,32}$/;
+          if (!re.exec(raw)) {
+            // TODO: 提醒用户
+            console.log("input error!");
+            return;
           }
+
           $.ajax({
             url: "generate",
             data: {

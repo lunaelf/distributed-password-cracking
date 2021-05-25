@@ -49,8 +49,8 @@
     <div class="container">
       <form class="custom-form">
         <div class="form-group">
-          <label for="hash_data">密码</label>
-          <input type="email" class="form-control" id="hash_data" placeholder="密码（MD5 或 SHA1）">
+          <label for="hash-data">密码</label>
+          <input type="email" class="form-control" id="hash-data" placeholder="密码（MD5 或 SHA1）">
         </div>
         <div class="form-group">
           <label class="radio-inline">
@@ -254,15 +254,27 @@
         $("#crack").click(function (event) {
           event.preventDefault();
 
-          const hash_data= $("#hash_data").val();
-          $("#hash_data").val("");
+          var hashData= $("#hash-data").val();
+          $("#hash-data").val("");
+          var type = typeValue();
+
+          // 检查输入
+          hashData = hashData.trim();
+          var reMD5 = /^[0-9a-f]{32}(\s*,\s*[0-9a-f]{32})*$/;
+          var reSHA1 = /^[0-9a-f]{40}(\s*,\s*[0-9a-f]{40})*$/;
+          if (!reMD5.exec(hashData) && !reSHA1.exec(hashData)) {
+            // TODO: 提醒用户
+            console.log("input error!");
+            return;
+          }
+
           setTimeout(refresh, 2000); // 延迟 2 秒再刷新
 
           $.ajax({
             url: "{{ url_for('crack.crack') }}",
             data: {
-              hash_data: hash_data,
-              type: typeValue()
+              hash_data: hashData,
+              type: type
             },
             type: "POST",
             dataType: "json",
