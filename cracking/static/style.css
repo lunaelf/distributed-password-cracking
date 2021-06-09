@@ -1,11 +1,7 @@
 body {
-  padding-top: 50px;
+  padding-top: 5rem;
 }
 
-.custom-form {
-  padding: 40px 15px;
-}
-
-.custom-table {
-  padding: 40px 15px;
+.row-margin-top-bottom {
+  margin: 4rem 0;
 }
