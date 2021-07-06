@@ -1,6 +1,9 @@
 import os
 
 from flask import Flask
+import ray
+
+from cracking import config
 
 
 def create_app(test_config=None):
@@ -35,5 +38,10 @@ def create_app(test_config=None):
     from cracking import crack
     app.register_blueprint(crack.bp)
     app.add_url_rule('/', endpoint='index')
+
+    if config.MODE == 'single':
+        ray.init()
+    elif config.MODE == 'cluster':
+        ray.init(address='auto', _redis_password='5241590000000000')
 
     return app

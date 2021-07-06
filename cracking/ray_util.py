@@ -9,9 +9,6 @@ from cracking import db_util
 from cracking import hash_util
 
 
-ray.init()
-# ray.init(address='auto', _redis_password='5241590000000000')
-
 # 原始密码每一位可能的取值
 # chars = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"
 # chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
