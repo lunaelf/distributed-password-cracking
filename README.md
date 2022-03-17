@@ -1,1 +1,1 @@
-# password-cracking
+# distributed-password-cracking
